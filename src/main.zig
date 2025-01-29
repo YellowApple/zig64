@@ -2,8 +2,8 @@ const std = @import("std");
 
 // BEGIN MEMORY MAP STUFF
 
-var dmem: *align(4) [4096]u8 = @ptrFromInt(0xa4000000);
-var imem: *align(4) [4096]u8 = @ptrFromInt(0xa4001000);
+const dmem: *align(4) [4096]u8 = @ptrFromInt(0xa4000000);
+const imem: *align(4) [4096]u8 = @ptrFromInt(0xa4001000);
 
 /// Peripheral Interface memory regions.  See
 /// https://n64brew.dev/wiki/Peripheral_Interface for details.
@@ -21,7 +21,7 @@ const PI = struct {
         /// Reserved.
         reserved: u28,
     };
-    var status: *volatile Status = @ptrFromInt(0xa4600010);
+    const status: *volatile Status = @ptrFromInt(0xa4600010);
 
     /// Waits until the PI is no longer busy processing an I/O or DMA
     /// request.  Strongly recommended to run this before reading to
@@ -174,27 +174,27 @@ const SC64 = struct {
     };
 
     /// General-purpose data buffer.  Useful for USB reads/writes.
-    var data_buffer: *align(4) [8192]u8 = @ptrFromInt(0xbffe0000);
+    const data_buffer: *align(4) [8192]u8 = @ptrFromInt(0xbffe0000);
 
     const register_base: u32 = 0xbfff0000;
     /// Status/command register.  Writes control command execution.
     /// Reads provide info on command execution status and
     /// enabled/raised interrupts.  See the `SC64.Status` docs for
     /// more info.
-    var status: *volatile Status = @ptrFromInt(register_base);
+    const status: *volatile Status = @ptrFromInt(register_base);
     /// Data register 0.  Stores the first result of the previous
     /// command or the first argument of the next command.
-    var data_0: *volatile u32 = @ptrFromInt(register_base + 0x4);
+    const data_0: *volatile u32 = @ptrFromInt(register_base + 0x4);
     /// Data register 1.  Stores the second result of the previous
     /// command or the second argument of the next command.
-    var data_1: *volatile u32 = @ptrFromInt(register_base + 0x8);
+    const data_1: *volatile u32 = @ptrFromInt(register_base + 0x8);
     /// Read-only.  Flashcart identifier.  If this equals `0x53437632`
     /// (ASCII `SCv2`), the SC64's registers are enabled.  Otherwise,
     /// the SC64's registers (except for `SC64.key` are disabled.  If
     /// entering the unlock sequence into `SC64.key` doesn't change
     /// this value to `0x53437672`, then the inserted cartridge is not
     /// a SummerCart 64.
-    var identifier: *volatile u32 = @ptrFromInt(register_base + 0xc);
+    const identifier: *volatile u32 = @ptrFromInt(register_base + 0xc);
     /// Write-only.  To enable the SC64's registers:
     ///
     /// - `PI.wait(); SC64.key = .Reset;`
@@ -204,16 +204,16 @@ const SC64 = struct {
     /// To disable the SC64's registers:
     ///
     /// - `PI.wait(); SC64.key = .Lock;`
-    var key: *volatile Key = @ptrFromInt(register_base + 0x10);
+    const key: *volatile Key = @ptrFromInt(register_base + 0x10);
     /// Write-only.  Enables/disables interrupts and clears pending
     /// interrupts.  See `SC64.IRQ` for more details.
-    var irq: *volatile IRQ = @ptrFromInt(register_base + 0x14);
+    const irq: *volatile IRQ = @ptrFromInt(register_base + 0x14);
     /// General-purpose data register.  If the cart has received an
     /// AUX signal from a host PC over USB, the value of that signal
     /// can be read from here.  Likewise, writing to this register
     /// will send an AUX signal via USB.  AUX values greater than or
     /// equal to `0xFF000000` are reserved for SC64 internal use.
-    var aux: *volatile u32 = @ptrFromInt(register_base + 0x18);
+    const aux: *volatile u32 = @ptrFromInt(register_base + 0x18);
 
     /// Attempts to enable SC64-specific memory registers.  Returns
     /// true if successful.  If false, then the inserted cartridge is
@@ -254,10 +254,10 @@ const ISViewer = struct {
     /// Writing to this register will cause the (emulated) IS-Viewer
     /// to read the specified number of bytes from `ISViewer.buffer`
     /// and display them in the emulator's text output.
-    var write_len: *volatile u32 = @ptrFromInt(0xb3ff0014);
+    const write_len: *volatile u32 = @ptrFromInt(0xb3ff0014);
     /// Buffer to store text to be sent via (emulated) IS-Viewer to
     /// the emulator.
-    var buffer: *align(4) [0x200]u8 = @ptrFromInt(0xb3ff0020);
+    const buffer: *align(4) [0x200]u8 = @ptrFromInt(0xb3ff0020);
 
     /// If true, an IS-Viewer (or an emulation thereof) is available.
     /// Otherwise, false.
