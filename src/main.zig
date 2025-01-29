@@ -15,7 +15,11 @@ const PI = struct {
         reserved: u28,
     };
     var status: *volatile Status = @ptrFromInt(0xa4600010);
-    
+
+    /// Waits until the PI is no longer busy processing an I/O or DMA
+    /// request.  Strongly recommended to run this before reading to
+    /// or writing from anything on the PI bus to avoid possible race
+    /// conditions and data corruption.
     fn wait() void {
         while (status.io_busy or status.dma_busy) {}
     }
@@ -97,20 +101,45 @@ const PI = struct {
 /// https://github.com/Polprzewodnikowy/SummerCart64/blob/main/docs/01_memory_map.md
 /// for details.
 const SC64 = struct {
+    /// SC64 status/command register fields.
     const Status = packed struct(u32) {
         // I sure hope I got the bit ordering right...
+        /// ID of the command to execute.
         command_id: u8, // TODO: enum of valid command IDs
+        /// If true, the SC64 will raise a cart interrupt when command
+        /// execution finishes.
         command_irq_request: bool,
+        /// Reserved; should be zero.
         reserved: u13 = 0,
+        /// Read-only.  If true, "AUX not empty" interrupts are
+        /// enabled.
         aux_irq_mask: bool,
+        /// Read-only.  If true, an "AUX not empty" interrupt is
+        /// pending.
         aux_irq_pending: bool,
+        /// Read-only.  If true, "USB not empty" interrupts are
+        /// enabled.
         usb_irq_mask: bool,
+        /// Read-only.  If true, a "USB not empty" interrupt is
+        /// pending.
         usb_irq_pending: bool,
+        /// Read-only.  If true, "command finished" interrupts are
+        /// enabled.
         command_irq_mask: bool,
+        /// Read-only.  If true, a "command finished" interrupt is
+        /// pending.
         command_irq_pending: bool,
+        /// Read-only.  If true, "button pressed" interrupts are
+        /// enabled.
         button_irq_mask: bool,
+        /// Read-only.  If true, a "button pressed" interrupt is
+        /// pending.
         button_irq_pending: bool,
+        /// Read-only.  If true, the most recent command encountered
+        /// an error.
         command_error: bool,
+        /// Read-only.  If true, the SC64 is currently executing a
+        /// command.
         command_busy: bool,
     };
 
@@ -141,48 +170,87 @@ const SC64 = struct {
         std.debug.assert(status_int == command_int);
     }
 
+    /// Magic values to enable or disable SC64-specific memory
+    /// regions.  To enable SC64-specific memory regions, set
+    /// `SC64.key` to `.Reset`, then `.Unlock1`, then `.Unlock2`.  To
+    /// disable SC64-specific memory regions, set the key register to
+    /// `.Lock`.
     const Key = enum(u32) {
         Reset = 0x00000000,
-        Unlock1 = 0x5f554e4c,
-        Unlock2 = 0x4f434b5f,
+        Unlock1 = 0x5f554e4c, // _UNL
+        Unlock2 = 0x4f434b5f, // OCK_
         Lock = 0xffffffff,
     };
 
+    /// IRQ register fields.
     const IRQ = packed struct(u32) {
-        button_clear: bool,
-        command_clear: bool,
-        usb_clear: bool,
-        aux_clear: bool,
-        reserved1: u16 = 0,
-        usb_disable: bool,
-        usb_enable: bool,
-        aux_disable: bool,
-        aux_enable: bool,
-        reserved2: u8 = 0,
+        /// Reserved.  Should be zero.
+        reserved1: u8 = 0,
+        /// If true, enable "AUX not empty" interrupts.
+        enable_aux: bool,
+        /// If true, enable "AUX not empty" interrupts.
+        disable_aux: bool,
+        /// If true, enable "USB not empty" interrupts.
+        enable_usb: bool,
+        /// If true, enable "USB not empty" interrupts.
+        disable_usb: bool,
+        /// Reserved.  Should be zero.
+        reserved2: u16 = 0,
+        /// If true, clear pending "AUX not empty" interrupt.
+        clear_aux: bool,
+        /// If true, clear pending "USB not empty" interrupt.
+        clear_usb: bool,
+        /// If true, clear pending "command finished" interrupt.
+        clear_cmd: bool,
+        /// If true, clear pending "button pressed" interrupt.
+        clear_btn: bool,
     };
-    
-    const Registers = packed struct {
-        status: Status,
-        data_0: u32,
-        data_1: u32,
-        identifier: u32,
-        key: Key,
-        irq: IRQ,
-        aux: u32,
-    };
-    
+
+    /// General-purpose data buffer.  Useful for USB reads/writes.
     var data_buffer: *align(4) [8192]u8 = @ptrFromInt(0xbffe0000);
-    var registers: *volatile Registers = @ptrFromInt(0xbfff0000);
 
     const register_base: u32 = 0xbfff0000;
+    /// Status/command register.  Writes control command execution.
+    /// Reads provide info on command execution status and
+    /// enabled/raised interrupts.  See the `SC64.Status` docs for
+    /// more info.
     var status: *volatile Status = @ptrFromInt(register_base);
+    /// Data register 0.  Stores the first result of the previous
+    /// command or the first argument of the next command.
     var data_0: *volatile u32 = @ptrFromInt(register_base + 0x4);
+    /// Data register 1.  Stores the second result of the previous
+    /// command or the second argument of the next command.
     var data_1: *volatile u32 = @ptrFromInt(register_base + 0x8);
+    /// Read-only.  Flashcart identifier.  If this equals `0x53437632`
+    /// (ASCII `SCv2`), the SC64's registers are enabled.  Otherwise,
+    /// the SC64's registers (except for `SC64.key` are disabled.  If
+    /// entering the unlock sequence into `SC64.key` doesn't change
+    /// this value to `0x53437672`, then the inserted cartridge is not
+    /// a SummerCart 64.
     var identifier: *volatile u32 = @ptrFromInt(register_base + 0xc);
+    /// Write-only.  To enable the SC64's registers:
+    ///
+    /// - `PI.wait(); SC64.key = .Reset;`
+    /// - `PI.wait(); SC64.key = .Unlock1;`
+    /// - `PI.wait(); SC64.key = .Unlock2;`
+    ///
+    /// To disable the SC64's registers:
+    ///
+    /// - `PI.wait(); SC64.key = .Lock;`
     var key: *volatile Key = @ptrFromInt(register_base + 0x10);
+    /// Write-only.  Enables/disables interrupts and clears pending
+    /// interrupts.  See `SC64.IRQ` for more details.
     var irq: *volatile IRQ = @ptrFromInt(register_base + 0x14);
+    /// General-purpose data register.  If the cart has received an
+    /// AUX signal from a host PC over USB, the value of that signal
+    /// can be read from here.  Likewise, writing to this register
+    /// will send an AUX signal via USB.  AUX values greater than or
+    /// equal to `0xFF000000` are reserved for SC64 internal use.
     var aux: *volatile u32 = @ptrFromInt(register_base + 0x18);
 
+    /// Attempts to enable SC64-specific memory registers.  Returns
+    /// true if successful.  If false, then the inserted cartridge is
+    /// not a SummerCart 64.
     fn present() bool {
         PI.writeWord(@ptrCast(SC64.key), @intFromEnum(SC64.Key.Reset));
         PI.writeWord(@ptrCast(SC64.key), @intFromEnum(SC64.Key.Unlock1));
@@ -190,6 +258,9 @@ const SC64 = struct {
         return PI.readWord(SC64.identifier) == 0x53437632;
     }
 
+    /// Sends text via the SC64's USB port.  If the SC64 is connected
+    /// to a PC and the PC is running `sc64deployer debug`, the text
+    /// will display in the debug output.
     fn print(text: []const u8) void {
         PI.writeBytes(data_buffer, text);
         PI.writeWord(SC64.data_0, @intFromPtr(data_buffer));
@@ -202,12 +273,29 @@ const SC64 = struct {
     }
 };
 
+/// IS-Viewer memory map and helper functions.  This operates in
+/// "libdragon" style rather than "libultra" style - meaning that this
+/// will probably misbehave with an actual IS-Viewer cartridge and
+/// software.  Instead, this is intended for emulators which advertise
+/// "IS-Viewer-compatible" debug messaging support; known to work with
+/// Ares, and Cen64 and Simple64 should work with it in theory (but
+/// this is untested).  The SummerCart 64 also apparently has
+/// IS-Viewer compatibility, though this is disabled by default (and
+/// redundant anyway, given that Zig64 already natively supports the
+/// SC64 via the `SC64` namespace).
 const ISViewer = struct {
+    /// Writing to this register will cause the (emulated) IS-Viewer
+    /// to read the specified number of bytes from `ISViewer.buffer`
+    /// and display them in the emulator's text output.
     var write_len: *volatile u32 = @ptrFromInt(0xb3ff0014);
+    /// Buffer to store text to be sent via (emulated) IS-Viewer to
+    /// the emulator.
     var buffer: *align(4) [0x200]u8 = @ptrFromInt(0xb3ff0020);
     var buffer_unsafe: [*]u8 = @ptrFromInt(0xb3ff0020);
     const buffer_size = 0x200;
 
+    /// If true, an IS-Viewer (or an emulation thereof) is available.
+    /// Otherwise, false.
     fn present() bool {
         PI.wait();
         ISViewer.buffer[0] = 0x12;
@@ -215,6 +303,7 @@ const ISViewer = struct {
         return (ISViewer.buffer[0] == 0x12);
     }
 
+    /// Sends text via the (emulated) IS-Viewer.
     fn print(text: []const u8) void {
         PI.writeBytes(buffer, text);
         PI.writeWord(ISViewer.write_len, text.len);
@@ -225,17 +314,31 @@ const ISViewer = struct {
 
 // BEGIN DEBUG STUFF
 
+/// Debug helper functions.
 const Debug = struct {
+    /// Available backends for debug output.
     const Backend = enum {
+        /// Disable debug logging entirely; calling `Debug.print()`
+        /// will do nothing.
         Dummy,
+        /// Send debug messages to an emulator's text console output
+        /// (via an approximate emulation of an IS-Viewer cartridge).
+        /// Probably won't work with real IS-Viewer cartridges.
         ISViewer,
+        /// Send debug messages to a connected PC via the SummerCart
+        /// 64's USB port.
         SC64,
+        /// Not yet implemented.
         ED64,
+        /// Not yet implemented.
         @"64Drive",
+        /// Not yet implemented.
         IQue,
     };
+    /// Backend to use for debug logging.
     var backend: Backend = .Dummy;
 
+    /// Detects the available backend.
     fn detectBackend() Backend {
         if (SC64.present()) return .SC64;
         if (ISViewer.present()) return .ISViewer;
@@ -243,10 +346,12 @@ const Debug = struct {
         return .Dummy;
     }
 
+    /// Detects and sets the available backend.
     fn init() void {
         backend = detectBackend();
     }
 
+    /// Sends text via the detected debug logging backend.
     fn print(text: []const u8) void {
         switch (backend) {
             .Dummy => {},
