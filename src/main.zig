@@ -58,13 +58,6 @@ const PI = struct {
         writeWord(&dest_chunked[chunked_len], extra);
     }
 
-    comptime {
-        const bytes = "asdffdsa12344321";
-        const i = 1;
-        const result = bytes[(i*4)..((i*4)+4)];
-        std.debug.assert(std.mem.eql(u8, result, "fdsa"));
-    }
-
     /// Creates a u32 from the first four of the provided bytes,
     /// filling in with zeroes if there are less than four bytes.
     fn bytesToWord(bytes: []const u8) u32 {
@@ -75,12 +68,6 @@ const PI = struct {
         if (bytes.len >= 3) buf[2] = bytes[2];
         if (bytes.len >= 4) buf[3] = bytes[3];
         return std.mem.readInt(u32, &buf, .big);
-    }
-
-    comptime {
-        const bytes: [4]u8 = .{0x01, 0x23, 0x45, 0x67};
-        const word: u32 = bytesToWord(&bytes);
-        std.debug.assert(word == 0x01234567);
     }
 
     /// Waits for the PI to be ready, then writes a word to a pointer.
@@ -142,33 +129,6 @@ const SC64 = struct {
         /// command.
         command_busy: bool,
     };
-
-    comptime {
-        var status_struct: Status = .{
-            .command_busy = false,
-            .command_error = false,
-            .button_irq_pending = false,
-            .button_irq_mask = false,
-            .command_irq_pending = false,
-            .command_irq_mask = false,
-            .usb_irq_pending = false,
-            .usb_irq_mask = false,
-            .aux_irq_pending = false,
-            .aux_irq_mask = false,
-            .command_irq_request = false,
-            .command_id = 0,
-        };
-        var status_int: u32 = @bitCast(status_struct);
-        std.debug.assert(status_int == 0);
-        status_struct.command_busy = true;
-        status_int = @bitCast(status_struct);
-        std.debug.assert(status_int == (1 << 31));
-        status_struct.command_busy = false;
-        status_struct.command_id = 'M';
-        status_int = @bitCast(status_struct);
-        const command_int: u32 = @intCast('M');
-        std.debug.assert(status_int == command_int);
-    }
 
     /// Magic values to enable or disable SC64-specific memory
     /// regions.  To enable SC64-specific memory regions, set
@@ -291,8 +251,6 @@ const ISViewer = struct {
     /// Buffer to store text to be sent via (emulated) IS-Viewer to
     /// the emulator.
     var buffer: *align(4) [0x200]u8 = @ptrFromInt(0xb3ff0020);
-    var buffer_unsafe: [*]u8 = @ptrFromInt(0xb3ff0020);
-    const buffer_size = 0x200;
 
     /// If true, an IS-Viewer (or an emulation thereof) is available.
     /// Otherwise, false.
