@@ -162,7 +162,6 @@ const SC64 = struct {
     };
     
     const Registers = packed struct {
-        
         status: Status,
         data_0: u32,
         data_1: u32,
