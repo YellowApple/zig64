@@ -5,13 +5,20 @@ const std = @import("std");
 var dmem: *align(4) [4096]u8 = @ptrFromInt(0xa4000000);
 var imem: *align(4) [4096]u8 = @ptrFromInt(0xa4001000);
 
-/// See https://n64brew.dev/wiki/Peripheral_Interface for details.
+/// Peripheral Interface memory regions.  See
+/// https://n64brew.dev/wiki/Peripheral_Interface for details.
 const PI = struct {
+    /// PI status register fields.
     const Status = packed struct(u32) {
+        /// If true, PI is busy handling a DMA operation.
         dma_busy: bool,
+        /// If true, PI is busy handling an I/O operation.
         io_busy: bool,
+        /// If true, the previous DMA request encountered an error.
         dma_error: bool,
+        /// If true, the previous DMA request is complete.
         dma_complete: bool,
+        /// Reserved.
         reserved: u28,
     };
     var status: *volatile Status = @ptrFromInt(0xa4600010);
