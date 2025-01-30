@@ -9,6 +9,8 @@ const imem: *align(4) [4096]u8 = @ptrFromInt(0xa4001000);
 /// https://n64brew.dev/wiki/Peripheral_Interface for details.
 const PI = @import("./PI.zig");
 
+const VI = @import("./VI.zig");
+
 /// SummerCart 64 memory map and helper functions.  See
 /// https://github.com/Polprzewodnikowy/SummerCart64/blob/main/docs/01_memory_map.md
 /// for details.
@@ -95,6 +97,10 @@ export fn __start() linksection(".boot") noreturn {
         0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0xba, 0xbe
     };
     PI.writeBytes(dmem, &dmem_test_pat);
+    const pxl: VI.Pixel16 = .{ .r = 31, .g = 31, .b = 0, .a = 0 };
+    const test_framebuffer: [320][240]VI.Pixel16 = .{.{pxl} ** 240} ** 320;
+    VI.origin.* = @intFromPtr(&test_framebuffer);
+    VI.setup(.{});
     while (true) {}
 }
 
