@@ -121,16 +121,53 @@ pub fn present() bool {
     return PI.readWord(identifier) == 0x53437632;
 }
 
+/// USB write parameters.  This normally gets written to `SC64.data_1`
+/// when performing USB writes (command ID `'M'`).
+const USBWriteParams = packed struct(u32) {
+    /// How many bytes to write (from the pointer in `SC64.data_0`) to
+    /// USB.
+    length: u24,
+    /// What kind of data to send.  At this time, the only known valid
+    /// value is `1`.
+    datatype: u8 = 1,
+};
+
 /// Sends text via the SC64's USB port.  If the SC64 is connected to a
 /// PC and the PC is running `sc64deployer debug`, the text will
 /// display in the debug output.
 pub fn print(text: []const u8) void {
     PI.writeBytes(data_buffer, text);
     PI.writeWord(data_0, @intFromPtr(data_buffer));
-    // TODO: packed struct instead of bitshift shenanigans?
-    PI.writeWord(data_1, (text.len & 0xffffff) | (1 << 24));
+    const params: USBWriteParams = .{.length = @truncate(text.len)};
+    PI.writeWord(data_1, @bitCast(params));
     PI.wait();
     status.command_id = 'M';
     PI.wait();
+    var timeout: u8 = 0;
+    while (usbBusy()) {
+        if (timeout == 255) return;
+        timeout += 1;
+    }
+}
+
+/// USB write status results.  This normally gets read from
+/// `SC64.data_0` when checking the status of a pending USB write
+/// (command ID `'U'`).
+const USBWriteStatus = packed struct(u32) {
+    /// Entirely unknown.  No upstream documentation.
+    unknown: u31,
+    /// If true, the SC64 is currently processing a USB write command.
+    busy: bool,
+};
+
+/// Returns true if the SC64 is currently processing a USB write
+/// command.
+pub fn usbBusy() bool {
+    PI.wait();
     while (status.command_busy) {}
+    status.command_id = 'U';
+    PI.wait();
+    while (status.command_busy) {}
+    const result: USBWriteStatus = @bitCast(PI.readWord(data_0));
+    return result.busy;
 }
