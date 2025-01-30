@@ -11,7 +11,8 @@
 OUTPUT_FORMAT ("elf32-bigmips", "elf32-bigmips", "elf32-littlemips")
 OUTPUT_ARCH (mips)
 /* EXTERN (_start) */
-ENTRY (_start)
+/* ENTRY (_start) */
+ENTRY (__start)
 
 PHDRS
 {

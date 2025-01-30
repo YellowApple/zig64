@@ -84,9 +84,9 @@ const Debug = struct {
 
 // BEGIN EVERYTHING ELSE
 
-/// N64 ROM entry point.  Libdragon's IPL3 calls this function after
-/// initializing RDRAM and loading our code into it.
-pub export fn _start() linksection(".boot") noreturn {
+/// N64 ROM entry point.  IPL3 calls this function after initializing
+/// RDRAM and loading our code into it.
+export fn __start() linksection(".boot") noreturn {
     Debug.init();
     Debug.print("All your Nintendo 64 are belong to us.\n");
     const dmem_test_pat: [16]u8 align(4) = .{
@@ -94,13 +94,6 @@ pub export fn _start() linksection(".boot") noreturn {
         0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0xba, 0xbe
     };
     PI.writeBytes(dmem, &dmem_test_pat);
-    while (true) {}
-}
-
-/// Just calls _start().  This seems redundant, but `zig build` seems
-/// to complain about it being missing for some reason.
-export fn __start() noreturn {
-    _start();
     while (true) {}
 }
 
