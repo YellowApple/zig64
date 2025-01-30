@@ -89,11 +89,23 @@ const Debug = struct {
 export fn __start() linksection(".boot") noreturn {
     Debug.init();
     Debug.print("All your Nintendo 64 are belong to us.\n");
+    Debug.print("This is another message from Zig.\n");
     const dmem_test_pat: [16]u8 align(4) = .{
         0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
         0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0xba, 0xbe
     };
     PI.writeBytes(dmem, &dmem_test_pat);
+    while (true) {}
+}
+
+pub fn panic(
+    msg: []const u8,
+    _: ?*std.builtin.StackTrace,
+    _: ?usize
+) noreturn {
+    Debug.print("PANIC: ");
+    Debug.print(msg);
+    Debug.print("\n");
     while (true) {}
 }
 
