@@ -1,4 +1,6 @@
+const std = @import("std");
 const PI = @import("./PI.zig");
+const memory = @import("./memory.zig");
 
 /// Writing to this register will cause the (emulated) IS-Viewer to
 /// read the specified number of bytes from `ISViewer.buffer` and
@@ -17,8 +19,11 @@ pub fn present() bool {
     return (buffer[0] == 0x12);
 }
 
-/// Sends text via the (emulated) IS-Viewer.
-pub fn print(text: []const u8) void {
-    PI.writeBytes(buffer, text);
-    PI.writeWord(write_len, text.len);
+/// Prints via the (emulated) IS-Viewer.
+pub fn print(comptime fmt: []const u8, args: anytype) void {
+    var scratch: [4096]u8 = undefined;
+    var wrapper = std.io.fixedBufferStream(scratch[0..]);
+    wrapper.writer().print(fmt, args) catch {};
+    PI.writeBytes(buffer, scratch[0..wrapper.pos]);
+    PI.writeWord(write_len, wrapper.pos);
 }

@@ -1,3 +1,4 @@
+const std = @import("std");
 const PI = @import("./PI.zig");
 
 /// SC64 status/command register fields.
@@ -135,10 +136,13 @@ const USBWriteParams = packed struct(u32) {
 /// Sends text via the SC64's USB port.  If the SC64 is connected to a
 /// PC and the PC is running `sc64deployer debug`, the text will
 /// display in the debug output.
-pub fn print(text: []const u8) void {
-    PI.writeBytes(data_buffer, text);
+pub fn print(comptime fmt: []const u8, args: anytype) void {
+    var scratch: [4096]u8 = undefined;
+    var wrapper = std.io.fixedBufferStream(scratch[0..]);
+    wrapper.writer().print(fmt, args) catch {};
+    PI.writeBytes(data_buffer, scratch[0..wrapper.pos]);
     PI.writeWord(data_0, @intFromPtr(data_buffer));
-    const params: USBWriteParams = .{.length = @truncate(text.len)};
+    const params: USBWriteParams = .{.length = @truncate(wrapper.pos)};
     PI.writeWord(data_1, @bitCast(params));
     PI.wait();
     status.command_id = 'M';

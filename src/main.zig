@@ -28,6 +28,13 @@ const SC64 = @import("./SC64.zig");
 /// SC64 via the `SC64` namespace).
 const ISViewer = @import("./ISViewer.zig");
 
+const Bus = @import("./memory.zig").Bus;
+
+comptime {
+    std.debug.assert(Bus.identify(SC64.data_buffer) == .PI);
+    std.debug.assert(Bus.identify(dmem) == .RCP);
+}
+
 // END MEMORY MAP STUFF
 
 // BEGIN DEBUG STUFF
@@ -70,11 +77,11 @@ const Debug = struct {
     }
 
     /// Sends text via the detected debug logging backend.
-    fn print(text: []const u8) void {
+    fn print(comptime fmt: []const u8, args: anytype) void {
         switch (backend) {
             .Dummy => {},
-            .ISViewer => ISViewer.print(text),
-            .SC64 => SC64.print(text),
+            .ISViewer => ISViewer.print(fmt, args),
+            .SC64 => SC64.print(fmt, args),
             .ED64 => {}, // FIXME: implement
             .@"64Drive" => {}, // FIXME: implement
             .IQue => {}, // FIXME: implement
@@ -90,18 +97,19 @@ const Debug = struct {
 /// RDRAM and loading our code into it.
 export fn __start() linksection(".boot") noreturn {
     Debug.init();
-    Debug.print("All your Nintendo 64 are belong to us.\n");
-    Debug.print("This is another message from Zig.\n");
+    Debug.print("All your Nintendo 64 are belong to us.\n", .{});
+    Debug.print("This is another message from Zig.\n", .{});
     const dmem_test_pat: [16]u8 align(4) = .{
         0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
         0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0xba, 0xbe
     };
-    PI.writeBytes(dmem, &dmem_test_pat);
+    @memcpy(dmem[0..16], &dmem_test_pat);
     const pxl: VI.Pixel16 = .{ .r = 31, .g = 31, .b = 0, .a = 0 };
     const test_framebuffer: [320][240]VI.Pixel16 = .{.{pxl} ** 240} ** 320;
     VI.origin.* = @intFromPtr(&test_framebuffer);
     VI.setup(.{});
-    while (true) {}
+    @panic("the demo is over already :(");
+    // while (true) {}
 }
 
 pub fn panic(
@@ -109,9 +117,7 @@ pub fn panic(
     _: ?*std.builtin.StackTrace,
     _: ?usize
 ) noreturn {
-    Debug.print("PANIC: ");
-    Debug.print(msg);
-    Debug.print("\n");
+    Debug.print("PANIC: {s}\n", .{msg});
     while (true) {}
 }
 
