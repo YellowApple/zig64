@@ -42,9 +42,7 @@ pub const Bus = enum {
     }
 };
 
-/// Based on which bus handles the given pointer's physical address,
-/// dispatches to a bus-specific wait mechanism (if one is
-/// applicable).
+/// Waits for the given bus to be ready for a new I/O operation.
 pub inline fn wait(bus: Bus) void {
     switch (bus) {
         .RDRAM => {},
@@ -54,37 +52,70 @@ pub inline fn wait(bus: Bus) void {
     }
 }
 
-/// Writes four bytes at a time from src to dest.  Mostly
-/// "borrowed" from std.Progress.copyAtomicStore(), which just so
-/// happens to do more or less the same thing.
-pub fn writeBytes(bus: Bus, dest: []align(4) u8, src: []const u8) void {
-    // "But why not just use the built-in Zig functions to copy
-    // between byte arrays?" I can already hear you asking.  Well,
-    // it's because the RCP's implementation of the SysAd bus is
-    // "simplified" such that it has no concept of an "access size";
-    // it can only read and write whole (32-bit) words.  Want to write
-    // a single byte?  lol no, fuck you, you're writing 32 bits
-    // whether you like it or not, and which byte-sized chunk of that
-    // word actually gets set (and which bytes get entirely clobbered)
-    // is apparently non-deterministic.
+/// Writes four bytes at a time from src to dest, automatically
+/// detecting the bus to use.
+pub fn writeBytes(dest: []align(4) u8, src: []const u8) void {
+    const bus = Bus.identify(dest);
+    writeBytesToBus(bus, dest, src);
+}
+
+/// Writes four bytes at a time from src to dest, manually specifying
+/// the bus to use.
+pub fn writeBytesToBus(
+    bus: Bus,
+    dest: []align(4) u8,
+    src: []const u8
+) void {
+    // "But why not just use @memcpy or std.mem.copyForward?" I can
+    // already hear you asking.  Well, two reasons for that:
     //
-    // Or at least that's my impression from reading through
-    // https://n64brew.dev/wiki/Memory_map (see the section on RCP
-    // registers), and that impression seems to be correct given that
-    // this behaves approximately as expected (albeit very unsafely)
-    // while byte-by-byte copies only manage to preserve one of every
-    // four bytes (both on real hardware and on bug-for-bug LLEs like
-    // Ares).
+    // 1. The RCP only respects the access size parameter in SysCMD
+    // when handling CPU←→RDRAM I/O.  For CPU←→(RDRAM/PI/SI) I/O, it
+    // uses a "simplified" interface that ignores the access size and
+    // always reads/writes 32-bits.  For reads that's fine as long as
+    // it's 32-bits or less (the CPU can ignore unneeded bytes), but
+    // for writes that means they *have* to be four bytes at a time.
+    // Want to write a single byte to RDRAM/PI/SI addresses?  No, fuck
+    // you, four bytes are getting written whether you like it or not.
+    //
+    // 2. Writes to the PI and SI are asynchronous, and each can only
+    // handle one I/O operation at a time, so we gotta wait between
+    // each four-byte chunk or else we'll end up writing garbled
+    // nonsense.
+    //
+    // These factors combined mean you can't do the byte-by-byte
+    // writes that std.mem likes to do by default.  Even if you're
+    // dealing in arrays/slices of 32-bit items instead of 8-bit
+    // items, std.mem's functions assume writes are synchronous and
+    // there's no way to tell them otherwise.  @memcpy seems to be
+    // okay for RCP-mapped addresses (like DMEM and IMEM, and most
+    // interface registers), but if the start/end addresses don't line
+    // up with word boundaries then you're probably gonna be
+    // corrupting data.
+    //
+    // Speaking of start/end addresses, a FIXME: be able to properly
+    // handle writes that don't start and/or end on 32-bit boundaries.
+    // If `dest` starts mid-word, it should be possible to read the
+    // existing word, merge it with the actual bytes to be written,
+    // then go word-by-word.  Likewise, if `dest` ends mid-word, it
+    // should be possible to read the existing word and merge it with
+    // the actual bytes to be written.  As it stands, this code
+    // type-constraints `dest` to `align(4)`, and forcibly pads a
+    // partial-word ending with nulls.  Once this FIXME is addressed,
+    // it'll be possible to write
+    // `std.io.(Reader/Writer/SeekableStream)` wrappers around
+    // non-RDRAM addresses without having to worry so much about
+    // clobbers from partial-word writes.
     std.debug.assert(dest.len >= src.len);
     const chunked_len = src.len / 4;
     std.debug.assert((dest.len / 4) + 1 >= chunked_len);
     const dest_chunked: []u32 = @as([*]u32, @ptrCast(dest))[0..chunked_len + 1];
     for (dest_chunked[0..chunked_len], 0..) |*d, i| {
         const s = bytesToWord(src[(i*4)..]);
-        writeWord(bus, d, s);
+        writeWordToBus(bus, d, s);
     }
     const extra = bytesToWord(src[(chunked_len * 4)..]);
-    writeWord(bus, &dest_chunked[chunked_len], extra);
+    writeWordToBus(bus, &dest_chunked[chunked_len], extra);
 }
 
 /// Creates a u32 from the first four of the provided bytes, filling
@@ -99,15 +130,28 @@ pub fn bytesToWord(bytes: []const u8) u32 {
     return std.mem.readInt(u32, &buf, .big);
 }
 
-/// Waits for the PI to be ready, then writes a word to a pointer.
-pub fn writeWord(bus: Bus, pointer: *volatile u32, data: u32) void {
+/// Waits for the given pointer's bus to be ready, then writes a word
+/// to it.
+pub fn writeWord(pointer: *volatile u32, data: u32) void {
+    writeWordToBus(Bus.identify(pointer), pointer, data);
+}
+
+/// Waits for the given pointer's bus to be ready, then reads a word
+/// from it.
+pub fn readWord(pointer: *volatile u32) u32 {
+    return readWordFromBus(Bus.identify(pointer), pointer);
+}
+
+/// Waits for the given bus to be ready, then writes a word to a
+/// pointer.
+pub fn writeWordToBus(bus: Bus, pointer: *volatile u32, data: u32) void {
     wait(bus);
     @atomicStore(u32, pointer, data, .monotonic);
 }
 
-/// Waits for the PI to be ready, then reads a word from a
+/// Waits for the given bus to be ready, then reads a word from a
 /// pointer.
-pub fn readWord(bus: Bus, pointer: *volatile u32) u32 {
+pub fn readWordFromBus(bus: Bus, pointer: *volatile u32) u32 {
     wait(bus);
     return @atomicLoad(u32, pointer, .monotonic);
 }
