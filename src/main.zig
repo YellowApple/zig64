@@ -93,6 +93,8 @@ const Debug = struct {
 
 // BEGIN EVERYTHING ELSE
 
+const  cop0 = @import("./cop0.zig");
+
 /// N64 ROM entry point.  IPL3 calls this function after initializing
 /// RDRAM and loading our code into it.
 export fn __start() linksection(".boot") noreturn {
@@ -104,10 +106,18 @@ export fn __start() linksection(".boot") noreturn {
         0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0xba, 0xbe
     };
     @memcpy(dmem[0..16], &dmem_test_pat);
+
+    // var c0_status: u32 = undefined;
+    // asm volatile ("mfc0 %[s], $12" : [s] "=r" (c0_status));
+    const c0_status_before_vi = cop0.Status.get();
+    Debug.print("c0_status_before_vi = {}\n", .{c0_status_before_vi});
+    
     const pxl: VI.Pixel16 = .{ .r = 31, .g = 31, .b = 0, .a = 0 };
     const test_framebuffer: [320][240]VI.Pixel16 = .{.{pxl} ** 240} ** 320;
     VI.origin.* = @intFromPtr(&test_framebuffer);
     VI.setup(.{});
+    const c0_status_after_vi = cop0.Status.get();
+    Debug.print("c0_status_after_vi = {}\n", .{c0_status_after_vi});
     @panic("the demo is over already :(");
     // while (true) {}
 }
