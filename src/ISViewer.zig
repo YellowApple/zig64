@@ -21,7 +21,7 @@ pub fn present() bool {
 
 /// Prints via the (emulated) IS-Viewer.
 pub fn print(comptime fmt: []const u8, args: anytype) void {
-    var scratch: [4096]u8 = undefined;
+    var scratch: [0x200]u8 = undefined;
     var wrapper = std.io.fixedBufferStream(scratch[0..]);
     wrapper.writer().print(fmt, args) catch {};
     PI.writeBytes(buffer, scratch[0..wrapper.pos]);
