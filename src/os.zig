@@ -108,7 +108,7 @@ pub fn start() callconv(.C) noreturn {
 }
 
 comptime {
-    @export(start, .{
+    @export(&start, .{
         .name = "__start",
         .linkage = .strong,
         .section = ".boot",

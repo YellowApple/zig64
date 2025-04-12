@@ -155,19 +155,6 @@ const SetupOptions = struct {
 pub fn setup(opts: SetupOptions) void {
     // Defaults based on guidance in
     // https://n64brew.dev/wiki/Video_Interface
-    control.* = .{
-        .pixel_format = opts.format,
-        .enable_gamma_dither = opts.gamma_dither,
-        .enable_gamma = opts.gamma,
-        .enable_divot = opts.antialias,
-        .enable_vbus_clock = false,
-        .serrate = opts.interlace,
-        .test_mode = false,
-        .aa_mode = if (opts.dedither) .EnabledAlwaysFetch else .Disabled,
-        .kill_we = false,
-        .pixel_advance = if (opts.ique) 1 else 3,
-        .enable_dedither = opts.dedither,
-    };
     width.* = opts.width;
     v_interrupt.* = 2;
     burst.* = switch (opts.mode) {
@@ -220,5 +207,22 @@ pub fn setup(opts: SetupOptions) void {
     y_scale.* = .{
         .scale = 0x100,
         .offset = 0,
+    };
+    // This was working perfectly fine a couple months ago when put at
+    // the start of this function, but now all of a sudden this causes
+    // Ares to freeze unless it's put at the *end* of this function.
+    // Haven't tested on real hardware yet.
+    control.* = .{
+        .pixel_format = opts.format,
+        .enable_gamma_dither = opts.gamma_dither,
+        .enable_gamma = opts.gamma,
+        .enable_divot = opts.antialias,
+        .enable_vbus_clock = false,
+        .serrate = opts.interlace,
+        .test_mode = false,
+        .aa_mode = if (opts.dedither) .EnabledAlwaysFetch else .Disabled,
+        .kill_we = false,
+        .pixel_advance = if (opts.ique) 1 else 3,
+        .enable_dedither = opts.dedither,
     };
 }

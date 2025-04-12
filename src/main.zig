@@ -5,6 +5,8 @@ pub const os = @import("./os.zig");
 // resolved.
 comptime { _ = os.start; }
 
+pub const panic = os.panic;
+
 pub fn main() void {
     os.Debug.print("All your Nintendo 64 are belong to us.\n", .{});
     os.Debug.print("This is another message from Zig.\n", .{});
@@ -15,11 +17,14 @@ pub fn main() void {
     @memcpy(os.dmem[0..16], &dmem_test_pat);
     const c0_status_before_vi = os.cop0.Status.get();
     os.Debug.print("c0_status_before_vi = {}\n", .{c0_status_before_vi});
+    os.Debug.print("Making a framebuffer...\n", .{});
     const pxl: os.VI.Pixel16 = .{ .r = 31, .g = 31, .b = 0, .a = 0 };
     const test_framebuffer: [320][240]os.VI.Pixel16 = .{.{pxl}**240}**320;
+    os.Debug.print("Setting the framebuffer...\n", .{});
     os.VI.origin.* = @intFromPtr(&test_framebuffer);
+    os.Debug.print("Turning on the VI...\n", .{});
     os.VI.setup(.{});
     const c0_status_after_vi = os.cop0.Status.get();
     os.Debug.print("c0_status_after_vi = {}\n", .{c0_status_after_vi});
-    // @panic("the demo is over already :(");
+    @panic("the demo is over already :(");
 }
