@@ -26,5 +26,9 @@ pub fn main() void {
     os.VI.setup(.{});
     const c0_status_after_vi = os.cop0.Status.get();
     os.Debug.print("c0_status_after_vi = {}\n", .{c0_status_after_vi});
+    os.Debug.print("MI.mode = {}\n", .{os.MI.mode.read});
+    os.Debug.print("MI.version = {}\n", .{os.MI.version});
+    os.Debug.print("MI.interrupt = {}\n", .{os.MI.interrupt});
+    os.Debug.print("MI.mask = {}\n", .{os.MI.mask.read});
     @panic("the demo is over already :(");
 }
