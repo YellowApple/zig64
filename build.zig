@@ -64,4 +64,12 @@ pub fn build(b: *std.Build) void {
         "Open debug console on a USB-connected Summercart 64"
     );
     sc64_debug_step.dependOn(&sc64_debug.step);
+
+    const run_ares = b.addSystemCommand(&.{"flatpak", "run", "dev.ares.ares"});
+    run_ares.addFileArg(rom);
+    const run_ares_step = b.step(
+        "run-ares",
+        "Run compiled ROM in an Ares emulator session"
+    );
+    run_ares_step.dependOn(&run_ares.step);
 }
