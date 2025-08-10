@@ -5,7 +5,8 @@ const base = 0xa4600000;
 
 /// RDRAM address for RDRAM<->PI DMAs.  Hardcoded to be an even number
 /// (i.e. LSB is hardcoded to zero).  Recommended to be a multiple of
-/// four (i.e. the two least significant bits are both zero).  See
+/// eight (i.e. the three least significant bits are all zero,
+/// i.e. should be 64-bit aligned).  See
 /// https://n64brew.dev/wiki/Peripheral_Interface#0x0460_0000_-_PI_DRAM_ADDR
 /// for more details.
 pub const dma_rdram_address: *volatile u32 = @ptrFromInt(base + 0x0); // u24
