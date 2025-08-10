@@ -32,7 +32,9 @@ pub const mode: *volatile Mode = @ptrFromInt(base + 0x0);
 
 /// (Current control) configuration options.  See
 /// https://n64brew.dev/wiki/RDRAM_Interface#0x0470_0004_-_RI_CONFIG
-/// for more details.
+/// for more details;
+/// https://n64brew.dev/wiki/RDRAM#Current_Control_calibration
+/// provides even more details on what these values mean.
 pub const Config = packed struct(u32) {
     /// Value for the current control register when automatic current
     /// control (AutoCC) is disabled / RAC CCtlEn signal is low.
