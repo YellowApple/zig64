@@ -16,6 +16,8 @@ pub const MI = @import("./MI.zig");
 
 pub const RI = @import("./RI.zig");
 
+pub const SI = @import("./SI.zig");
+
 /// SummerCart 64 memory map and helper functions.  See
 /// https://github.com/Polprzewodnikowy/SummerCart64/blob/main/docs/01_memory_map.md
 /// for details.

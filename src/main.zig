@@ -30,5 +30,6 @@ pub fn main() void {
     os.Debug.print("MI.version = {}\n", .{os.MI.version});
     os.Debug.print("MI.interrupt = {}\n", .{os.MI.interrupt});
     os.Debug.print("MI.mask = {}\n", .{os.MI.mask.read});
+    os.Debug.print("SI.status = {}\n", .{os.SI.status});
     @panic("the demo is over already :(");
 }

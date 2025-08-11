@@ -1,5 +1,6 @@
 const std = @import("std");
 const PI = @import("./PI.zig");
+const SI = @import("./SI.zig");
 
 pub const Bus = enum {
     RDRAM,
@@ -48,7 +49,7 @@ pub inline fn wait(bus: Bus) void {
         .RDRAM => {},
         .RCP => {},
         .PI => PI.wait(),
-        .SI => {}, // FIXME: implement
+        .SI => SI.wait(),
     }
 }
 
