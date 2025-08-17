@@ -65,7 +65,7 @@ pub fn build(b: *std.Build) void {
     );
     sc64_debug_step.dependOn(&sc64_debug.step);
 
-    const run_ares = b.addSystemCommand(&.{"flatpak", "run", "dev.ares.ares"});
+    const run_ares = b.addSystemCommand(&.{"ares"});
     run_ares.addFileArg(rom);
     const run_ares_step = b.step(
         "run-ares",
