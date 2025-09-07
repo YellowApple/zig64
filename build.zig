@@ -10,8 +10,10 @@ pub fn build(b: *std.Build) void {
 
     const n64tool = b.addExecutable(.{
         .name = "n64tool",
-        .target = b.standardTargetOptions(.{}),
-        .optimize = b.standardOptimizeOption(.{}),
+        .root_module = b.createModule(.{
+            .target = b.standardTargetOptions(.{}),
+            .optimize = b.standardOptimizeOption(.{}),
+        }),
     });
     n64tool.linkLibC();
     n64tool.addCSourceFiles(.{
@@ -28,9 +30,11 @@ pub fn build(b: *std.Build) void {
     
     const elf = b.addExecutable(.{
         .name = "zig64.elf",
-        .root_source_file = b.path("src/main.zig"),
-        .target = b.resolveTargetQuery(n64_target_query),
-        .optimize = .Debug,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = b.resolveTargetQuery(n64_target_query),
+            .optimize = .Debug,
+        }),
     });
     elf.setLinkerScript(b.path("src/n64.ld"));
     b.installArtifact(elf);

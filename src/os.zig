@@ -104,7 +104,7 @@ pub const cop0 = @import("./cop0.zig");
 
 /// N64 ROM entry point.  IPL3 calls this function after initializing
 /// RDRAM and loading our code into it.
-pub fn start() callconv(.C) noreturn {
+pub fn start() callconv(.c) noreturn {
     Debug.init();
     if (@hasDecl(root, "main"))
         root.main()
@@ -128,7 +128,7 @@ pub fn panic(
     addr: ?usize
 ) noreturn {
     Debug.print("PANIC: {s}\n", .{msg});
-    Debug.print("trace = {?}\n", .{trace});
+    Debug.print("trace = {any}\n", .{trace});
     Debug.print("addr = {x}\n", .{addr orelse @returnAddress()});
     while (true) {}
 }
