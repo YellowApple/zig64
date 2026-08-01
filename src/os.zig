@@ -83,15 +83,29 @@ pub const Debug = struct {
         backend = detectBackend();
     }
 
-    /// Sends text via the detected debug logging backend.
-    pub fn print(comptime fmt: []const u8, args: anytype) void {
+    fn dummyDrain(io_w: *std.Io.Writer, data: []const []const u8, splat: usize) !usize {
+        _ = io_w;
+        _ = splat;
+        return data[0].len;
+    }
+
+    fn dummyWriter(buffer: []u8) std.Io.Writer {
+        return .{
+            .buffer = buffer,
+            .vtable = &.{.drain = dummyDrain},
+        };
+    }
+
+    /// Creates a std.Io.Writer that proxies writes to the configured
+    /// backend.
+    pub fn writer(buffer: []u8) std.Io.Writer {
         switch (backend) {
-            .Dummy => {},
-            .ISViewer => ISViewer.print(fmt, args),
-            .SC64 => SC64.print(fmt, args),
-            .ED64 => {}, // FIXME: implement
-            .@"64Drive" => {}, // FIXME: implement
-            .IQue => {}, // FIXME: implement
+            .Dummy => return dummyWriter(buffer),
+            .ISViewer => return ISViewer.writer(buffer),
+            .SC64 => return SC64.writer(buffer),
+            .ED64 => return dummyWriter(buffer), // FIXME: implement
+            .@"64Drive" => return dummyWriter(buffer), // FIXME: implement
+            .IQue => return dummyWriter(buffer), // FIXME: implement
         }
     }
 };
@@ -107,7 +121,7 @@ pub const cop0 = @import("./cop0.zig");
 pub fn start() callconv(.c) noreturn {
     Debug.init();
     if (@hasDecl(root, "main"))
-        root.main()
+        root.main() catch @panic("main() returned an error")
     else
         @panic("no main(); nothing to do");
     @panic("main() returned");
@@ -127,9 +141,10 @@ pub fn panic(
     trace: ?*std.builtin.StackTrace,
     addr: ?usize
 ) noreturn {
-    Debug.print("PANIC: {s}\n", .{msg});
-    Debug.print("trace = {any}\n", .{trace});
-    Debug.print("addr = {x}\n", .{addr orelse @returnAddress()});
+    var writer = Debug.writer(&.{});
+    writer.print("PANIC: {s}\n", .{msg}) catch unreachable;
+    writer.print("trace = {any}\n", .{trace}) catch unreachable;
+    writer.print("addr = {x}\n", .{addr orelse @returnAddress()}) catch unreachable;
     while (true) {}
 }
 

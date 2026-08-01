@@ -1,3 +1,4 @@
+const ISViewer = @This();
 const std = @import("std");
 const PI = @import("./PI.zig");
 const memory = @import("./memory.zig");
@@ -19,11 +20,24 @@ pub fn present() bool {
     return (buffer[0] == 0x12);
 }
 
-/// Prints via the (emulated) IS-Viewer.
-pub fn print(comptime fmt: []const u8, args: anytype) void {
-    var scratch: [0x200]u8 = undefined;
-    var wrapper = std.io.fixedBufferStream(scratch[0..]);
-    wrapper.writer().print(fmt, args) catch {};
-    PI.writeBytes(buffer, scratch[0..wrapper.pos]);
-    PI.writeWord(write_len, wrapper.pos);
+fn drain(io_w: *std.Io.Writer, data: []const []const u8, splat: usize) !usize {
+    // This array-of-array and splat nonsense is too weird for me to
+    // comprehend right now, so we're just gonna ignore the splat and
+    // always only handle the data one string at a time.  Karl Seguin
+    // says it's okay (https://www.openmymind.net/Zigs-New-Writer/) so
+    // why not lmao
+    _ = io_w;
+    _ = splat;
+    const len = if (data[0].len > buffer.len) buffer.len else data[0].len;
+    PI.writeBytes(buffer, data[0][0..len]);
+    PI.writeWord(write_len, len);
+    return len;
+}
+
+/// Creates a std.Io.Writer wrapper around the (emulated) IS-Viewer.
+pub fn writer(writer_buffer: []u8) std.Io.Writer {
+    return .{
+        .buffer = writer_buffer,
+        .vtable = &.{.drain = drain},
+    };
 }

@@ -13,10 +13,10 @@ pub fn build(b: *std.Build) void {
         .root_module = b.createModule(.{
             .target = b.standardTargetOptions(.{}),
             .optimize = b.standardOptimizeOption(.{}),
+            .link_libc = true,
         }),
     });
-    n64tool.linkLibC();
-    n64tool.addCSourceFiles(.{
+    n64tool.root_module.addCSourceFiles(.{
         .files = &.{"vendor/n64tool/n64tool.c"},
         .flags = &.{
             "--std=c23", // Needed for typeof()

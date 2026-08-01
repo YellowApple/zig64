@@ -1,3 +1,4 @@
+const SC64 = @This();
 const std = @import("std");
 const PI = @import("./PI.zig");
 
@@ -133,25 +134,38 @@ const USBWriteParams = packed struct(u32) {
     datatype: u8 = 1,
 };
 
-/// Sends text via the SC64's USB port.  If the SC64 is connected to a
-/// PC and the PC is running `sc64deployer debug`, the text will
-/// display in the debug output.
-pub fn print(comptime fmt: []const u8, args: anytype) void {
-    var scratch: [4096]u8 = undefined;
-    var wrapper = std.io.fixedBufferStream(scratch[0..]);
-    wrapper.writer().print(fmt, args) catch {};
-    PI.writeBytes(data_buffer, scratch[0..wrapper.pos]);
+fn drain(io_w: *std.Io.Writer, data: []const []const u8, splat: usize) !usize {
+    // This array-of-array and splat nonsense is too weird for me to
+    // comprehend right now, so we're just gonna ignore the splat and
+    // always only handle the data one string at a time.  Karl Seguin
+    // says it's okay (https://www.openmymind.net/Zigs-New-Writer/) so
+    // why not lmao
+    _ = io_w;
+    _ = splat;
+    const len = if (data[0].len > data_buffer.len) data_buffer.len else data[0].len;
+    PI.writeBytes(data_buffer, data[0][0..len]);
     PI.writeWord(data_0, @intFromPtr(data_buffer));
-    const params: USBWriteParams = .{.length = @truncate(wrapper.pos)};
+    const params: USBWriteParams = .{.length = @truncate(len)};
     PI.writeWord(data_1, @bitCast(params));
     PI.wait();
     status.command_id = 'M';
     PI.wait();
     var timeout: u8 = 0;
     while (usbBusy()) {
-        if (timeout == 255) return;
+        if (timeout == 255) break;
         timeout += 1;
     }
+    return len;
+}
+
+/// Creates a std.Io.Writer wrapper around the SC64's USB port, such
+/// that written data will appear as debug output on a host machine
+/// running `sc64deployer debug`.
+pub fn writer(writer_buffer: []u8) std.Io.Writer {
+    return .{
+        .buffer = writer_buffer,
+        .vtable = &.{.drain = drain},
+    };
 }
 
 /// USB write status results.  This normally gets read from
