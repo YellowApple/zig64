@@ -62,11 +62,7 @@ pub fn writeBytes(dest: []align(4) u8, src: []const u8) void {
 
 /// Writes four bytes at a time from src to dest, manually specifying
 /// the bus to use.
-pub fn writeBytesToBus(
-    bus: Bus,
-    dest: []align(4) u8,
-    src: []const u8
-) void {
+pub fn writeBytesToBus(bus: Bus, dest: []align(4) u8, src: []const u8) void {
     // "But why not just use @memcpy or std.mem.copyForward?" I can
     // already hear you asking.  Well, two reasons for that:
     //
@@ -110,9 +106,9 @@ pub fn writeBytesToBus(
     std.debug.assert(dest.len >= src.len);
     const chunked_len = src.len / 4;
     std.debug.assert((dest.len / 4) + 1 >= chunked_len);
-    const dest_chunked: []u32 = @as([*]u32, @ptrCast(dest))[0..chunked_len + 1];
+    const dest_chunked: []u32 = @as([*]u32, @ptrCast(dest))[0 .. chunked_len + 1];
     for (dest_chunked[0..chunked_len], 0..) |*d, i| {
-        const s = bytesToWord(src[(i*4)..]);
+        const s = bytesToWord(src[(i * 4)..]);
         writeWordToBus(bus, d, s);
     }
     const extra = bytesToWord(src[(chunked_len * 4)..]);
@@ -123,7 +119,7 @@ pub fn writeBytesToBus(
 /// in with zeroes if there are less than four bytes.
 pub fn bytesToWord(bytes: []const u8) u32 {
     // FIXME: there's probably a much better way to do this.
-    var buf: [4]u8 = .{0,0,0,0};
+    var buf: [4]u8 = .{ 0, 0, 0, 0 };
     if (bytes.len >= 1) buf[0] = bytes[0];
     if (bytes.len >= 2) buf[1] = bytes[1];
     if (bytes.len >= 3) buf[2] = bytes[2];

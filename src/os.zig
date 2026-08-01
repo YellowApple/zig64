@@ -92,7 +92,7 @@ pub const Debug = struct {
     fn dummyWriter(buffer: []u8) std.Io.Writer {
         return .{
             .buffer = buffer,
-            .vtable = &.{.drain = dummyDrain},
+            .vtable = &.{ .drain = dummyDrain },
         };
     }
 
@@ -136,11 +136,7 @@ comptime {
 }
 
 /// Panic handler.  Stack traces are WIP.
-pub fn panic(
-    msg: []const u8,
-    trace: ?*std.builtin.StackTrace,
-    addr: ?usize
-) noreturn {
+pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, addr: ?usize) noreturn {
     var writer = Debug.writer(&.{});
     writer.print("PANIC: {s}\n", .{msg}) catch unreachable;
     writer.print("trace = {any}\n", .{trace}) catch unreachable;

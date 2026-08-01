@@ -15,7 +15,7 @@ const PI = struct {
         dma_busy: bool,
     };
     var status: *volatile Status = @ptrFromInt(0xa4600010);
-    
+
     inline fn wait() void {
         while (status.io_busy or status.dma_busy) {}
     }
@@ -62,7 +62,7 @@ const SC64 = struct {
             aux_enable: bool,
             reserved2: u8 = 0,
         };
-        
+
         status: Status,
         data_0: u32,
         data_1: u32,
@@ -90,7 +90,7 @@ const ROMHeader = extern struct {
     checksum: u64 align(1) = 0,
     reserved1: u64 align(1) = 0,
     title: [20]u8 align(1) = "Zig N64 Demo        ".*,
-    reserved2: [7]u8 align(1) = .{0,0,0,0,0,0,0},
+    reserved2: [7]u8 align(1) = .{ 0, 0, 0, 0, 0, 0, 0 },
     gamecode: [4]u8 align(1) = "NZGA".*,
     rom_version: u8 align(1) = 0,
 
@@ -116,33 +116,33 @@ comptime {
     // I guess this is one way to find out if Zig/LLVM and GCC are
     // compatible when it comes to inline MIPS assembly...
     asm (
-            \\    .set noreorder
-            \\    .section .text.ipl3_trampoline
-            \\IPL3Trampoline:
-            \\    # addiu    $t2, $t3, .Lend-.Lstart-4
-            \\    addiu    $t2, $t3, 36
-            \\1:  lw       $ra, %lo(.Lstart-0xA4000040)($t3)
-            \\    sw       $ra, %lo(0xA4000000-0xA4000040)($t3)
-            \\    bne      $t3, $t2, 1b
-            \\    addiu    $t3, 4
-            \\    lui      $t1, 0xA400
-            \\    lui      $t2, 0xB000
-            \\    jr       $t1
-            \\    addiu    $t3, $t2, 0xFC0
-            \\.Lstart:
-            \\2:  lw       $ra, 0x1040($t2)
-            \\    sw       $ra, 0x0040($t1)
-            \\    addiu    $t2, 4
-            \\    bne      $t2, $t3, 2b
-            \\    addiu    $t1, 4
-            \\    or       $t1, $0, $0
-            \\    addiu    $t2, $0, 0x40
-            \\    addiu    $t3, $sp, 0xA4000040-0xA4001FF0
-            \\    jr       $t3
-            \\    addiu    $ra, $sp, 0xA4001550-0xA4001FF0
-            \\.Lend:
-            \\    .fill 0xFC0-(.Lend-IPL3Trampoline)-8, 1, 0
-            \\    .quad 0x00030e413340ba87
+        \\    .set noreorder
+        \\    .section .text.ipl3_trampoline
+        \\IPL3Trampoline:
+        \\    # addiu    $t2, $t3, .Lend-.Lstart-4
+        \\    addiu    $t2, $t3, 36
+        \\1:  lw       $ra, %lo(.Lstart-0xA4000040)($t3)
+        \\    sw       $ra, %lo(0xA4000000-0xA4000040)($t3)
+        \\    bne      $t3, $t2, 1b
+        \\    addiu    $t3, 4
+        \\    lui      $t1, 0xA400
+        \\    lui      $t2, 0xB000
+        \\    jr       $t1
+        \\    addiu    $t3, $t2, 0xFC0
+        \\.Lstart:
+        \\2:  lw       $ra, 0x1040($t2)
+        \\    sw       $ra, 0x0040($t1)
+        \\    addiu    $t2, 4
+        \\    bne      $t2, $t3, 2b
+        \\    addiu    $t1, 4
+        \\    or       $t1, $0, $0
+        \\    addiu    $t2, $0, 0x40
+        \\    addiu    $t3, $sp, 0xA4000040-0xA4001FF0
+        \\    jr       $t3
+        \\    addiu    $ra, $sp, 0xA4001550-0xA4001FF0
+        \\.Lend:
+        \\    .fill 0xFC0-(.Lend-IPL3Trampoline)-8, 1, 0
+        \\    .quad 0x00030e413340ba87
     );
 }
 
@@ -153,24 +153,24 @@ comptime {
 // involved than the IPL3 boot trampoline.
 comptime {
     asm (
-            \\    .set noreorder
-            \\    .section .text.ique_trampoline
-            \\IQUETrampoline:
-            \\    lui     $t2, 0xB000
-            \\    lui     $t1, 0xA400
-            \\    addiu   $t3, $t2, 0xFC0
-            \\    addiu   $sp, $t1, 0x1FF0
-            \\1:  lw      $ra, 0x0040($t2)
-            \\    sw      $ra, 0x0040($t1)
-            \\    addiu   $t2, 4
-            \\    bne     $t2, $t3, 1b
-            \\    addiu   $t1, 4
-            \\    or      $t1, $0, $0
-            \\    addiu   $t2, $0, 0x40
-            \\    addiu   $t3, $sp, 0xA4000040-0xA4001FF0
-            \\    jr      $t3
-            \\    addiu   $ra, $sp, 0xA4001550-0xA4001FF0
-            \\    .fill 0x40-(.-IQUETrampoline), 1, 0
+        \\    .set noreorder
+        \\    .section .text.ique_trampoline
+        \\IQUETrampoline:
+        \\    lui     $t2, 0xB000
+        \\    lui     $t1, 0xA400
+        \\    addiu   $t3, $t2, 0xFC0
+        \\    addiu   $sp, $t1, 0x1FF0
+        \\1:  lw      $ra, 0x0040($t2)
+        \\    sw      $ra, 0x0040($t1)
+        \\    addiu   $t2, 4
+        \\    bne     $t2, $t3, 1b
+        \\    addiu   $t1, 4
+        \\    or      $t1, $0, $0
+        \\    addiu   $t2, $0, 0x40
+        \\    addiu   $t3, $sp, 0xA4000040-0xA4001FF0
+        \\    jr      $t3
+        \\    addiu   $ra, $sp, 0xA4001550-0xA4001FF0
+        \\    .fill 0x40-(.-IQUETrampoline), 1, 0
     );
 }
 
@@ -184,13 +184,13 @@ const dmem_stack_addr: u32 = 0xa4000000 + 4096 - 0x10;
 export fn prestage() linksection(".stage1.pre") callconv(.Naked) noreturn {
     // We don't have a stack yet, and Zig kinda sorta needs that, so
     // let's fix that first by using DMEM temporarily.
-    
+
     asm volatile (
-            \\li $sp, %[stk]
-            :
-            : [stk] "i" (dmem_stack_addr)
+        \\li $sp, %[stk]
+        :
+        : [stk] "i" (dmem_stack_addr),
     );
-    
+
     // In theory, due to linker magic, this should just fall through
     // to stage1 without an explicit jump.
 }
@@ -203,7 +203,9 @@ export fn prestage() linksection(".stage1.pre") callconv(.Naked) noreturn {
 export fn stage1() linksection(".stage1") noreturn {
     boot_debug_init();
     boot_debug_print("Zig IPL3 says bonjour");
-    while (true) { boot_debug_print("hon hon hon"); }
+    while (true) {
+        boot_debug_print("hon hon hon");
+    }
 }
 
 const BootDebugImpl = enum {
@@ -252,7 +254,7 @@ fn boot_debug_print(text: []const u8) linksection(".text.boot") void {
         dest.* = src;
     }
     // I don't know what 0x2020200a means
-    for (buffer[len..len+4], [_]u8{0x20, 0x20, 0x20, 0x0a}) |*dest, src| {
+    for (buffer[len .. len + 4], [_]u8{ 0x20, 0x20, 0x20, 0x0a }) |*dest, src| {
         dest.* = src;
     }
     boot_debug_print_end(len + 4);

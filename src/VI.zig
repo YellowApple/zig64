@@ -181,10 +181,16 @@ pub fn setup(opts: SetupOptions) void {
         .PAL => if (opts.interlace) 624 else 625,
     };
     h_total.* = switch (opts.mode) {
-        .NTSC => .{ .total = 3093, .leap = 0, },
+        .NTSC => .{
+            .total = 3093,
+            .leap = 0,
+        },
         .PAL => .{ .total = 3177, .leap = 0x15 },
         // FIXME: should PAL-M leap be 0x15 or 0?
-        .MPAL => .{ .total = 3090, .leap = 0, },
+        .MPAL => .{
+            .total = 3090,
+            .leap = 0,
+        },
     };
     if (opts.mode == .PAL) h_total_leap.* = .{ .a = 3182, .b = 3183 };
     h_video.* = switch (opts.mode) {

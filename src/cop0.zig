@@ -24,12 +24,17 @@ pub const Context32 = packed struct(u32) {
 
     /// Get COP0's (32-bit) Context register.
     pub inline fn get() Context32 {
-        return asm volatile("mfc0 %[c], $4" : [c] "=r" (-> Context32));
+        return asm volatile ("mfc0 %[c], $4"
+            : [c] "=r" (-> Context32),
+        );
     }
 
     /// Set COP0's (32-bit) Context register.
     pub inline fn set(context: Context32) void {
-        asm volatile("mtc0 %[c], $4" :: [c] "r" (context));
+        asm volatile ("mtc0 %[c], $4"
+            :
+            : [c] "r" (context),
+        );
     }
 };
 
@@ -49,12 +54,17 @@ pub const Context64 = packed struct(u64) {
 
     /// Get COP0's (64-bit) Context register.
     pub inline fn get() Context64 {
-        return asm volatile("mfc0 %[c], $4" : [c] "=r" (-> Context64));
+        return asm volatile ("mfc0 %[c], $4"
+            : [c] "=r" (-> Context64),
+        );
     }
 
     /// Set COP0's (64-bit) Context register.
     pub inline fn set(context: Context64) void {
-        asm volatile("mtc0 %[c], $4" :: [c] "r" (context));
+        asm volatile ("mtc0 %[c], $4"
+            :
+            : [c] "r" (context),
+        );
     }
 };
 
@@ -64,7 +74,9 @@ pub const Context64 = packed struct(u64) {
 pub const BadVAddr32 = struct {
     /// Get COP0's (32-bit) BadVAddr register.
     pub inline fn get() u32 {
-        return asm volatile("mfc0 %[a], $8" : [a] "=r" (-> u32));
+        return asm volatile ("mfc0 %[a], $8"
+            : [a] "=r" (-> u32),
+        );
     }
 };
 
@@ -74,7 +86,9 @@ pub const BadVAddr32 = struct {
 pub const BadVAddr64 = struct {
     /// Get COP0's (64-bit) BadVAddr register.
     pub inline fn get() u64 {
-        return asm volatile("mfc0 %[a], $8" : [a] "=r" (-> u64));
+        return asm volatile ("mfc0 %[a], $8"
+            : [a] "=r" (-> u64),
+        );
     }
 };
 
@@ -83,7 +97,9 @@ pub const BadVAddr64 = struct {
 /// zero.  Useful for timers (see `Compare`).  Read-only.
 pub const Count = struct {
     pub inline fn get() u32 {
-        return asm volatile("mfc0 %[c], $9" : [c] "=r" (-> u32));
+        return asm volatile ("mfc0 %[c], $9"
+            : [c] "=r" (-> u32),
+        );
     }
 };
 
@@ -92,11 +108,16 @@ pub const Count = struct {
 /// this register clears Interrupt 7 as a side effect.
 pub const Compare = struct {
     pub inline fn get() u32 {
-        return asm volatile("mfc0 %[c], $11" : [c] "=r" (-> u32));
+        return asm volatile ("mfc0 %[c], $11"
+            : [c] "=r" (-> u32),
+        );
     }
 
     pub inline fn set(compare: u32) void {
-        asm volatile("mtc0 %[c], $11" :: [c] "r" (compare));
+        asm volatile ("mtc0 %[c], $11"
+            :
+            : [c] "r" (compare),
+        );
     }
 };
 
@@ -160,7 +181,7 @@ pub const Status = packed struct(u32) {
         /// Is COP3 usable?
         cop3: bool,
     };
-    
+
     /// Are interrupts enabled?
     interrupts_enabled: bool,
     /// Is there an unhandled exception?
@@ -194,12 +215,17 @@ pub const Status = packed struct(u32) {
 
     /// Get COP0's Status register.
     pub inline fn get() Status {
-        return asm volatile("mfc0 %[s], $12" : [s] "=r" (-> Status));
+        return asm volatile ("mfc0 %[s], $12"
+            : [s] "=r" (-> Status),
+        );
     }
 
     /// Set COP0's Status register.
     pub inline fn set(status: Status) void {
-        asm volatile("mtc0 %[s], $12" :: [s] "r" (status));
+        asm volatile ("mtc0 %[s], $12"
+            :
+            : [s] "r" (status),
+        );
     }
 };
 
@@ -258,7 +284,7 @@ pub const Cause = packed struct(u32) {
         /// Is Interrupt 7 (hardware, timer) pending?
         timer: bool,
     };
-    
+
     /// Must be zero.
     reserved0: u2 = 0,
     /// Most recent exception.
@@ -278,12 +304,17 @@ pub const Cause = packed struct(u32) {
 
     /// Get COP0's Cause register.
     pub inline fn get() Cause {
-        return asm volatile("mfc0 %[c], $13" : [c] "=r" (-> Cause));
+        return asm volatile ("mfc0 %[c], $13"
+            : [c] "=r" (-> Cause),
+        );
     }
 
     /// Set COP0's Cause register.
     pub inline fn set(cause: Cause) void {
-        asm volatile("mtc0 %[c], $13" :: [c] "r" (cause));
+        asm volatile ("mtc0 %[c], $13"
+            :
+            : [c] "r" (cause),
+        );
     }
 };
 
@@ -298,7 +329,9 @@ pub const Cause = packed struct(u32) {
 pub const EPC32 = struct {
     /// Get COP0's (32-bit) Exception Program Counter (EPC) register.
     pub inline fn get() u32 {
-        return asm volatile("mfc0 %[p], $14" : [p] "=r" (-> u32));
+        return asm volatile ("mfc0 %[p], $14"
+            : [p] "=r" (-> u32),
+        );
     }
 };
 
@@ -313,7 +346,9 @@ pub const EPC32 = struct {
 pub const EPC64 = struct {
     /// Get COP0's (64-bit) Exception Program Counter (EPC) register.
     pub inline fn get() u64 {
-        return asm volatile("mfc0 %[p], $14" : [p] "=r" (-> u64));
+        return asm volatile ("mfc0 %[p], $14"
+            : [p] "=r" (-> u64),
+        );
     }
 };
 
@@ -344,12 +379,17 @@ pub const Watch = packed struct(u32) {
 
     /// Get COP0's Watch register.
     pub inline fn get() Watch {
-        return asm volatile("mfc0 %[w], $18" : [w] "=r" (-> Watch));
+        return asm volatile ("mfc0 %[w], $18"
+            : [w] "=r" (-> Watch),
+        );
     }
 
     /// Set COP0's Watch register.
     pub inline fn set(watch: Watch) void {
-        asm volatile("mtc0 %[w], $18" :: [w] "r" (watch));
+        asm volatile ("mtc0 %[w], $18"
+            :
+            : [w] "r" (watch),
+        );
     }
 };
 
@@ -363,7 +403,7 @@ pub const XContext = packed struct(u64) {
         supervisor = 1,
         kernel = 3,
     };
-    
+
     /// Must be zero.
     reserved: u4 = 0,
     /// Bits 39:13 of the virtual address that caused the TLB miss.
@@ -378,12 +418,17 @@ pub const XContext = packed struct(u64) {
 
     /// Get COP0's XContext register.
     pub inline fn get() XContext {
-        return asm volatile("mfc0 %[c], $20" : [c] "=r" (-> XContext));
+        return asm volatile ("mfc0 %[c], $20"
+            : [c] "=r" (-> XContext),
+        );
     }
 
     /// Set COP0's XContext register.
     pub inline fn set(context: XContext) void {
-        asm volatile("mtc0 %[c], $20" :: [c] "r" (context));
+        asm volatile ("mtc0 %[c], $20"
+            :
+            : [c] "r" (context),
+        );
     }
 };
 
@@ -395,7 +440,9 @@ pub const ErrorEPC32 = struct {
     /// Get COP0's (32-bit) Error Exception Program Counter (ErrorEPC)
     /// register.
     pub inline fn get() u32 {
-        return asm volatile("mfc0 %[p], $30" : [p] "=r" (-> u32));
+        return asm volatile ("mfc0 %[p], $30"
+            : [p] "=r" (-> u32),
+        );
     }
 };
 
@@ -407,6 +454,8 @@ pub const ErrorEPC64 = struct {
     /// Get COP0's (64-bit) Error Exception Program Counter (ErrorEPC)
     /// register.
     pub inline fn get() u64 {
-        return asm volatile("mfc0 %[p], $30" : [p] "=r" (-> u64));
+        return asm volatile ("mfc0 %[p], $30"
+            : [p] "=r" (-> u64),
+        );
     }
 };

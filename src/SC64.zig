@@ -145,7 +145,7 @@ fn drain(io_w: *std.Io.Writer, data: []const []const u8, splat: usize) !usize {
     const len = if (data[0].len > data_buffer.len) data_buffer.len else data[0].len;
     PI.writeBytes(data_buffer, data[0][0..len]);
     PI.writeWord(data_0, @intFromPtr(data_buffer));
-    const params: USBWriteParams = .{.length = @truncate(len)};
+    const params: USBWriteParams = .{ .length = @truncate(len) };
     PI.writeWord(data_1, @bitCast(params));
     PI.wait();
     status.command_id = 'M';
@@ -164,7 +164,7 @@ fn drain(io_w: *std.Io.Writer, data: []const []const u8, splat: usize) !usize {
 pub fn writer(writer_buffer: []u8) std.Io.Writer {
     return .{
         .buffer = writer_buffer,
-        .vtable = &.{.drain = drain},
+        .vtable = &.{ .drain = drain },
     };
 }
 

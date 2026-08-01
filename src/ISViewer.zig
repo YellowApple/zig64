@@ -38,6 +38,6 @@ fn drain(io_w: *std.Io.Writer, data: []const []const u8, splat: usize) !usize {
 pub fn writer(writer_buffer: []u8) std.Io.Writer {
     return .{
         .buffer = writer_buffer,
-        .vtable = &.{.drain = drain},
+        .vtable = &.{ .drain = drain },
     };
 }

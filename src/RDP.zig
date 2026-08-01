@@ -167,7 +167,7 @@ pub const tbist: *volatile Tbist = @ptrFromInt(test_base + 0x0);
 /// for more details.
 pub const TestMode = packed union {
     /// Values read from the buffer testing control register.
-    pub const Read = packed struct (u32) {
+    pub const Read = packed struct(u32) {
         /// Is span buffer testing enabled?
         enabled: bool,
         /// Unknown, but the 2nd and 7th bits are allegedy always 1.
@@ -185,7 +185,7 @@ pub const TestMode = packed union {
     };
 
     /// Values written to the buffer testing control register.
-    pub const Write = packed struct (u32) {
+    pub const Write = packed struct(u32) {
         /// Should span buffer testing be enabled?
         enable: bool,
         /// Unused.
